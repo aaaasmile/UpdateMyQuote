@@ -12,7 +12,7 @@ namespace PortfolioExcelChecker
         internal void FillBuy()
         {
             var xlApp = new Excel.Application();
-            var xlWorkBook = xlApp.Workbooks.Open(@"D:\Documents\easybank\Portfolio.xlsx", 0, false, 5, "", "", true, Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
+            var xlWorkBook = xlApp.Workbooks.Open(GetExcelFileName(), 0, false, 5, "", "", true, Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
             var xlWorkSheetSales = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(2);
             var xlWorkSheetDepot = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(3);
             object misValue = System.Reflection.Missing.Value;
@@ -31,11 +31,18 @@ namespace PortfolioExcelChecker
             releaseObject(xlApp);
         }
 
+        internal string GetExcelFileName()
+        {
+            return @"D:\Documents\easybank\Portfolio.xlsx";
+        }
+
         private void WriteBuyValue(List<DepotLine> depotLines, Excel.Worksheet xlWorkSheetDepot)
         {
             foreach (var depotLine in depotLines)
             {
                 xlWorkSheetDepot.Cells[depotLine.Row, "J"] = depotLine.BuyValue;
+                xlWorkSheetDepot.Cells[depotLine.Row, "K"] = depotLine.SellValue;
+                xlWorkSheetDepot.Cells[depotLine.Row, "L"] = depotLine.BuyValueOnDepotState;
             }
         }
 
@@ -49,8 +56,8 @@ namespace PortfolioExcelChecker
 
                 var purchLines = sales.Where(x => x.Isn.Equals(isn) && x.SaleOperation == SaleOperationEnum.Buy).ToArray();
                 double piecesBuyed = purchLines.Sum(x => x.NumPiecesExecuted);
-                var numSell = sales.Where(x => x.Isn.Equals(isn) && x.SaleOperation == SaleOperationEnum.Sell)
-                        .Sum(x => x.NumPiecesExecuted);
+                var sellLines = sales.Where(x => x.Isn.Equals(isn) && x.SaleOperation == SaleOperationEnum.Sell);
+                var numSell = sellLines.Sum(x => x.NumPiecesExecuted);
 
                 numSell = Math.Abs(numSell);
                 if ((piecesBuyed - numSell) != depotLine.NumOfPieces)
@@ -70,11 +77,21 @@ namespace PortfolioExcelChecker
                 }
 
                 double buyValue = 0.0;
+                double purchItems = 0.0;
                 foreach (var purchLine in purchLines)
                 {
                     buyValue += purchLine.NumPiecesExecuted * purchLine.Price;
+                    purchItems += purchLine.NumPiecesExecuted;
                 }
                 depotLine.BuyValue = Math.Round(buyValue,2);
+                depotLine.BuyValueOnDepotState = Math.Round(buyValue / purchItems * depotLine.NumOfPieces, 2);
+
+                double sellValue = 0.0;
+                foreach (var sellLine in sellLines)
+                {
+                    sellValue += Math.Abs(sellLine.NumPiecesExecuted * sellLine.Price);
+                }
+                depotLine.SellValue = Math.Round(sellValue, 2);
             }
         }
 

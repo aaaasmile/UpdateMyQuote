@@ -15,6 +15,8 @@ namespace PortfolioExcelChecker
         public double Course { get; set; }
         public double CurrentValue { get; set; }
         public double BuyValue { get; set; }
+        public double BuyValueOnDepotState { get; set; }
+        public double SellValue { get; set; }
         public int Row { get; set; }
     }
 }
