@@ -13,17 +13,55 @@ namespace PortfolioExcelChecker
         {
             var xlApp = new Excel.Application();
             var xlWorkBook = xlApp.Workbooks.Open(@"D:\Documents\easybank\Portfolio.xlsx", 0, false, 5, "", "", true, Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
-            var xlWorkSheet = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(2);
+            var xlWorkSheetSales = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(2);
+            var xlWorkSheetDepot = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(3);
             object misValue = System.Reflection.Missing.Value;
 
-            List<Sale>  sales = ExtractSales(xlWorkSheet);
+            List<Sale> sales = ExtractSales(xlWorkSheetSales);
+            List<DepotLine> depotLines = ExtractDepotLines(xlWorkSheetDepot);
 
             xlWorkBook.Close(true, misValue, misValue);
             xlApp.Quit();
 
-            releaseObject(xlWorkSheet);
+            releaseObject(xlWorkSheetSales);
+            releaseObject(xlWorkSheetDepot);
             releaseObject(xlWorkBook);
             releaseObject(xlApp);
+        }
+
+        private List<DepotLine> ExtractDepotLines(Excel.Worksheet xlWorkSheet)
+        {
+            List<DepotLine> depotLines = new List<DepotLine>();
+            bool searchData = true;
+            DepotLine currItem;
+            for (int i = 4; i < 300; i++)
+            {
+                string nextCellLbl = string.Format("A{0}", i);
+                if (xlWorkSheet.get_Range(nextCellLbl, nextCellLbl).Value2 == null)
+                {
+                    if (searchData)
+                        continue;
+                    else
+                        break;
+                }
+                if (searchData)
+                {
+                    if (xlWorkSheet.get_Range(nextCellLbl, nextCellLbl).Value2 is double)
+                    {
+                        searchData = false;
+                    }
+                    else
+                        continue;
+                }
+                currItem = new DepotLine();
+                currItem.Date = DateTime.FromOADate(xlWorkSheet.get_Range(nextCellLbl, nextCellLbl).Value2);
+                currItem.Isn = GetCellString("B", i, xlWorkSheet);
+                currItem.Description = GetCellString("C", i, xlWorkSheet);
+                currItem.NumOfPieces = GetCellInteger("D", i, xlWorkSheet);
+                depotLines.Add(currItem);
+            }
+
+            return depotLines;
         }
 
         private static List<Sale> ExtractSales(Excel.Worksheet xlWorkSheet)
@@ -31,7 +69,7 @@ namespace PortfolioExcelChecker
             bool searchData = true;
             Sale currItem;
             List<Sale> saleList = new List<Sale>();
-            for (int i = 4; i < 100; i++)
+            for (int i = 4; i < 300; i++)
             {
                 string nextCellLbl = string.Format("A{0}", i);
                 if (xlWorkSheet.get_Range(nextCellLbl, nextCellLbl).Value2 == null)
@@ -67,7 +105,7 @@ namespace PortfolioExcelChecker
         private static string GetCellString(string column, int row, Excel.Worksheet xlWorkSheet)
         {
             string result = string.Empty;
-            string range = string.Format("{0}{1}",column,row);
+            string range = string.Format("{0}{1}", column, row);
             if (xlWorkSheet.get_Range(range, range).Value2 != null)
                 result = xlWorkSheet.get_Range(range, range).Value2.ToString();
             return result;
