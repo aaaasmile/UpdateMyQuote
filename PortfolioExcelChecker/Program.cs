@@ -11,7 +11,20 @@ namespace PortfolioExcelChecker
         static void Main(string[] args)
         {
             PortfolioExcel portFolio = new PortfolioExcel();
-            portFolio.FillBuy();
+            try
+            {
+                portFolio.OpenExcel();
+                portFolio.FillBuy();
+                portFolio.SaveExcel();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: {0}",ex);
+            }
+            finally
+            {
+                portFolio.CloseExcel();
+            }
             Console.WriteLine("Excel file {0} updated", portFolio.GetExcelFileName());
             Console.ReadKey();
         }

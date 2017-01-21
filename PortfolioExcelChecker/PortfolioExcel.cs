@@ -9,26 +9,48 @@ namespace PortfolioExcelChecker
 {
     class PortfolioExcel
     {
+        private Excel.Application xlApp;
+        private Excel.Workbook xlWorkBook;
+        private Excel.Worksheet xlWorkSheetSales;
+        private Excel.Worksheet xlWorkSheetDepot;
+
+        internal void OpenExcel()
+        {
+            xlApp = new Excel.Application();
+            xlWorkBook = xlApp.Workbooks.Open(GetExcelFileName(), 0, false, 5, "", "", true, Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
+            xlWorkSheetSales = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(2);
+            xlWorkSheetDepot = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(3);
+        }
+        internal void SaveExcel()
+        {
+            if (xlApp != null)
+            {
+                object misValue = System.Reflection.Missing.Value;
+
+                xlWorkBook.Close(true, misValue, misValue);
+            }
+        }
+
+        internal void CloseExcel()
+        {
+            if (xlApp != null)
+            {
+                xlApp.Quit();
+
+                releaseObject(xlWorkSheetSales);
+                releaseObject(xlWorkSheetDepot);
+                releaseObject(xlWorkBook);
+                releaseObject(xlApp);
+                xlApp = null;
+            }
+        }
+
         internal void FillBuy()
         {
-            var xlApp = new Excel.Application();
-            var xlWorkBook = xlApp.Workbooks.Open(GetExcelFileName(), 0, false, 5, "", "", true, Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
-            var xlWorkSheetSales = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(2);
-            var xlWorkSheetDepot = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(3);
-            object misValue = System.Reflection.Missing.Value;
-
             List<Sale> sales = ExtractSales(xlWorkSheetSales);
             List<DepotLine> depotLines = ExtractDepotLines(xlWorkSheetDepot);
             CalculateBuyValue(sales, depotLines);
             WriteBuyValue(depotLines, xlWorkSheetDepot);
-
-            xlWorkBook.Close(true, misValue, misValue);
-            xlApp.Quit();
-
-            releaseObject(xlWorkSheetSales);
-            releaseObject(xlWorkSheetDepot);
-            releaseObject(xlWorkBook);
-            releaseObject(xlApp);
         }
 
         internal string GetExcelFileName()
