@@ -1,0 +1,4 @@
+*.suo
+*.pdb
+/PortfolioExcelChecker/obj/Debug/*.*
+*.cache
