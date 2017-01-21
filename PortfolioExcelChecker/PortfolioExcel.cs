@@ -19,6 +19,7 @@ namespace PortfolioExcelChecker
 
             List<Sale> sales = ExtractSales(xlWorkSheetSales);
             List<DepotLine> depotLines = ExtractDepotLines(xlWorkSheetDepot);
+            CalculateBuyValue(sales, depotLines);
 
             xlWorkBook.Close(true, misValue, misValue);
             xlApp.Quit();
@@ -27,6 +28,25 @@ namespace PortfolioExcelChecker
             releaseObject(xlWorkSheetDepot);
             releaseObject(xlWorkBook);
             releaseObject(xlApp);
+        }
+
+        private void CalculateBuyValue(List<Sale> sales, List<DepotLine> depotLines)
+        {
+            foreach (var depotLine in depotLines)
+            {
+                string isn = depotLine.Isn;
+                var purchLines = sales.Where(x => x.Isn.Equals(isn) && x.SaleOperation == SaleOperationEnum.Buy).ToArray();
+                int piecesBuyed = purchLines.Sum(x => x.NumPiecesExecuted);
+                if (piecesBuyed != depotLine.NumOfPieces)
+                    throw new ArgumentOutOfRangeException(string.Format("Not all items in depot are buyed: isn {0}", isn));
+
+                double buyValue = 0.0;
+                foreach (var purchLine in purchLines)
+                {
+                    buyValue += purchLine.NumPiecesExecuted * purchLine.Price;
+                }
+                depotLine.BuyValue = buyValue;
+            }
         }
 
         private List<DepotLine> ExtractDepotLines(Excel.Worksheet xlWorkSheet)
@@ -92,7 +112,7 @@ namespace PortfolioExcelChecker
                 currItem.Date = DateTime.FromOADate(xlWorkSheet.get_Range(nextCellLbl, nextCellLbl).Value2);
                 var SaleType = GetCellString("B", i, xlWorkSheet);
                 currItem.SaleOperation = SaleType.Equals(Sale.BUY_CAPTION) ? SaleOperationEnum.Buy : SaleOperationEnum.Sell;
-                currItem.Isn = GetCellString("C", i, xlWorkSheet);
+                currItem.Isn = GetCellString("M", i, xlWorkSheet);
                 currItem.Description = GetCellString("D", i, xlWorkSheet);
                 currItem.NumPiecesInOrder = GetCellInteger("G", i, xlWorkSheet);
                 currItem.NumPiecesExecuted = GetCellInteger("I", i, xlWorkSheet);
