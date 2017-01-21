@@ -9,7 +9,8 @@ namespace PortfolioExcelChecker
     public enum SaleOperationEnum
     {
         Sell,
-        Buy
+        Buy,
+        Capital
     }
 
     public class Sale
@@ -19,11 +20,12 @@ namespace PortfolioExcelChecker
         public string Isn { get; set; }
         public string Description { get; set; }
         public string Place { get; set; }
-        public int NumPiecesInOrder { get; set; }
-        public int NumPiecesExecuted { get; set; }
+        public double NumPiecesInOrder { get; set; }
+        public double NumPiecesExecuted { get; set; }
         public double Price { get; set; }
 
         public const string SELL_CAPTION = "Verkauf";
         public const string BUY_CAPTION = "Kauf";
+        public const string CAPITAL = "Kapitalmaßnahme";
     }
 }

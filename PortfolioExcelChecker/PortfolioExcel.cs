@@ -20,6 +20,7 @@ namespace PortfolioExcelChecker
             List<Sale> sales = ExtractSales(xlWorkSheetSales);
             List<DepotLine> depotLines = ExtractDepotLines(xlWorkSheetDepot);
             CalculateBuyValue(sales, depotLines);
+            WriteBuyValue(depotLines, xlWorkSheetDepot);
 
             xlWorkBook.Close(true, misValue, misValue);
             xlApp.Quit();
@@ -30,22 +31,50 @@ namespace PortfolioExcelChecker
             releaseObject(xlApp);
         }
 
+        private void WriteBuyValue(List<DepotLine> depotLines, Excel.Worksheet xlWorkSheetDepot)
+        {
+            foreach (var depotLine in depotLines)
+            {
+                xlWorkSheetDepot.Cells[depotLine.Row, "J"] = depotLine.BuyValue;
+            }
+        }
+
         private void CalculateBuyValue(List<Sale> sales, List<DepotLine> depotLines)
         {
             foreach (var depotLine in depotLines)
             {
                 string isn = depotLine.Isn;
+                var lastCapital = sales.Where(x => x.Isn.Equals(isn) && x.SaleOperation == SaleOperationEnum.Capital)
+                        .OrderBy(x => x.Date).LastOrDefault();
+
                 var purchLines = sales.Where(x => x.Isn.Equals(isn) && x.SaleOperation == SaleOperationEnum.Buy).ToArray();
-                int piecesBuyed = purchLines.Sum(x => x.NumPiecesExecuted);
-                if (piecesBuyed != depotLine.NumOfPieces)
-                    throw new ArgumentOutOfRangeException(string.Format("Not all items in depot are buyed: isn {0}", isn));
+                double piecesBuyed = purchLines.Sum(x => x.NumPiecesExecuted);
+                var numSell = sales.Where(x => x.Isn.Equals(isn) && x.SaleOperation == SaleOperationEnum.Sell)
+                        .Sum(x => x.NumPiecesExecuted);
+
+                numSell = Math.Abs(numSell);
+                if ((piecesBuyed - numSell) != depotLine.NumOfPieces)
+                {
+                    bool argErr = true;
+                    if (lastCapital != null)
+                    {
+                        var recentPurch = sales.Where(x => x.Isn.Equals(isn) &&
+                                x.SaleOperation == SaleOperationEnum.Buy && x.Date > lastCapital.Date).Sum(x => x.NumPiecesExecuted);
+
+                        var sumRounded = Math.Round(recentPurch + lastCapital.NumPiecesExecuted - numSell, 2);
+                        if (sumRounded == depotLine.NumOfPieces)
+                            argErr = false;
+                    }
+                    if (argErr)
+                        throw new ArgumentOutOfRangeException(string.Format("Not all items in depot are buyed: isn {0}", isn));
+                }
 
                 double buyValue = 0.0;
                 foreach (var purchLine in purchLines)
                 {
                     buyValue += purchLine.NumPiecesExecuted * purchLine.Price;
                 }
-                depotLine.BuyValue = buyValue;
+                depotLine.BuyValue = Math.Round(buyValue,2);
             }
         }
 
@@ -77,7 +106,8 @@ namespace PortfolioExcelChecker
                 currItem.Date = DateTime.FromOADate(xlWorkSheet.get_Range(nextCellLbl, nextCellLbl).Value2);
                 currItem.Isn = GetCellString("B", i, xlWorkSheet);
                 currItem.Description = GetCellString("C", i, xlWorkSheet);
-                currItem.NumOfPieces = GetCellInteger("D", i, xlWorkSheet);
+                currItem.NumOfPieces = GetCellDouble("D", i, xlWorkSheet);
+                currItem.Row = i;
                 depotLines.Add(currItem);
             }
 
@@ -110,12 +140,25 @@ namespace PortfolioExcelChecker
                 }
                 currItem = new Sale();
                 currItem.Date = DateTime.FromOADate(xlWorkSheet.get_Range(nextCellLbl, nextCellLbl).Value2);
-                var SaleType = GetCellString("B", i, xlWorkSheet);
-                currItem.SaleOperation = SaleType.Equals(Sale.BUY_CAPTION) ? SaleOperationEnum.Buy : SaleOperationEnum.Sell;
+                string saleType = GetCellString("B", i, xlWorkSheet);
+                switch (saleType)
+                {
+                    case Sale.BUY_CAPTION:
+                        currItem.SaleOperation = SaleOperationEnum.Buy;
+                        break;
+                    case Sale.SELL_CAPTION:
+                        currItem.SaleOperation = SaleOperationEnum.Sell;
+                        break;
+                    case Sale.CAPITAL:
+                        currItem.SaleOperation = SaleOperationEnum.Capital;
+                        break;
+                    default:
+                        throw new ArgumentException(string.Format("Sale type {0} not recognized", saleType));
+                }
                 currItem.Isn = GetCellString("M", i, xlWorkSheet);
                 currItem.Description = GetCellString("D", i, xlWorkSheet);
-                currItem.NumPiecesInOrder = GetCellInteger("G", i, xlWorkSheet);
-                currItem.NumPiecesExecuted = GetCellInteger("I", i, xlWorkSheet);
+                currItem.NumPiecesInOrder = GetCellDouble("G", i, xlWorkSheet);
+                currItem.NumPiecesExecuted = GetCellDouble("I", i, xlWorkSheet);
                 currItem.Price = GetCellDouble("K", i, xlWorkSheet);
                 saleList.Add(currItem);
             }
@@ -158,7 +201,7 @@ namespace PortfolioExcelChecker
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(obj);
                 obj = null;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 obj = null;
             }
