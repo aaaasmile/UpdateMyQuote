@@ -16,6 +16,8 @@ namespace PortfolioExcelChecker
         private Excel.Worksheet _xlWorkSheetDepot;
         private Excel.Worksheet _xlWorkSheetPortfolio;
 
+        private string _excelFileName;
+
         private Dictionary<string, QuoteLine> _dctQuote = new Dictionary<string, QuoteLine>();
 
         internal void Activate()
@@ -23,13 +25,19 @@ namespace PortfolioExcelChecker
             _xlApp.Visible = true;
         }
 
-        internal void OpenExcel()
+        internal void OpenExcel(string fileName)
         {
+            _excelFileName = fileName;
             _xlApp = new Excel.Application();
-            _xlWorkBook = _xlApp.Workbooks.Open(GetExcelFileName(), 0, false, 5, "", "", true, Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
+            _xlWorkBook = _xlApp.Workbooks.Open(fileName, 0, false, 5, "", "", true, Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
             _xlWorkSheetSales = (Excel.Worksheet)_xlWorkBook.Worksheets.get_Item(2);
             _xlWorkSheetDepot = (Excel.Worksheet)_xlWorkBook.Worksheets.get_Item(3);
             _xlWorkSheetPortfolio = (Excel.Worksheet)_xlWorkBook.Worksheets.get_Item(1);
+        }
+
+        internal string GetExcelFileName()
+        {
+            return _excelFileName;
         }
         internal void SaveExcel()
         {
@@ -119,12 +127,7 @@ namespace PortfolioExcelChecker
             CalculateBuyValue(sales, depotLines);
             WriteBuyValue(depotLines, _xlWorkSheetDepot);
         }
-
-        internal string GetExcelFileName()
-        {
-            return @"D:\Documents\easybank\Portfolio.xlsx";
-        }
-
+        
         private void WriteBuyValue(List<DepotLine> depotLines, Excel.Worksheet xlWorkSheetDepot)
         {
             foreach (var depotLine in depotLines)

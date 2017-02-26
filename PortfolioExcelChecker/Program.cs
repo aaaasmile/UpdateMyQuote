@@ -16,7 +16,7 @@ namespace PortfolioExcelChecker
                 QuoteUpdaterLauncher updater = new QuoteUpdaterLauncher();
                 updater.TeminatedEvent += (x) => 
                 {
-                    portFolio.OpenExcel();
+                    portFolio.OpenExcel(@"D:\Documents\easybank\Portfolio.xlsm");
                     //portFolio.FillBuy();
                     portFolio.UpdateQuote();
                     //portFolio.SaveExcel();
