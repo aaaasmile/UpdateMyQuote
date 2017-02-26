@@ -84,6 +84,7 @@ namespace PortfolioExcelChecker
                 {
                     _xlWorkSheetPortfolio.Cells[i, "H"] = currentQuote.Quote;
                     _xlWorkSheetPortfolio.Cells[i, "I"] = currentQuote.LastUpdate;
+                    _xlWorkSheetPortfolio.Cells[i, "AA"] = currentQuote.Url;
                 }
                 else
                 {
@@ -102,6 +103,7 @@ namespace PortfolioExcelChecker
                 {
                     _xlWorkSheetDepot.Cells[i, "E"] = currentQuote.Quote;
                     _xlWorkSheetDepot.Cells[i, "O"] = currentQuote.LastUpdate;
+                    _xlWorkSheetDepot.Cells[i, "P"] = currentQuote.Url;
                 }
                 else
                 {
