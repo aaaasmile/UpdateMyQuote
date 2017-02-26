@@ -14,8 +14,10 @@ namespace PortfolioExcelChecker
             try
             {
                 portFolio.OpenExcel();
-                portFolio.FillBuy();
-                portFolio.SaveExcel();
+                //portFolio.FillBuy();
+                portFolio.UpdateQuote();
+                //portFolio.SaveExcel();
+                portFolio.Activate();
             }
             catch (Exception ex)
             {
@@ -23,9 +25,9 @@ namespace PortfolioExcelChecker
             }
             finally
             {
-                portFolio.CloseExcel();
+                //portFolio.CloseExcel();
             }
-            Console.WriteLine("Excel file {0} updated", portFolio.GetExcelFileName());
+            Console.WriteLine("Excel file {0} updated\nPress any key to continue", portFolio.GetExcelFileName());
             Console.ReadKey();
         }
     }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,48 +10,112 @@ namespace PortfolioExcelChecker
 {
     class PortfolioExcel
     {
-        private Excel.Application xlApp;
-        private Excel.Workbook xlWorkBook;
-        private Excel.Worksheet xlWorkSheetSales;
-        private Excel.Worksheet xlWorkSheetDepot;
+        private Excel.Application _xlApp;
+        private Excel.Workbook _xlWorkBook;
+        private Excel.Worksheet _xlWorkSheetSales;
+        private Excel.Worksheet _xlWorkSheetDepot;
+        private Excel.Worksheet _xlWorkSheetPortfolio;
+
+        private Dictionary<string, QuoteLine> _dctQuote = new Dictionary<string, QuoteLine>();
+
+        internal void Activate()
+        {
+            _xlApp.Visible = true;
+        }
 
         internal void OpenExcel()
         {
-            xlApp = new Excel.Application();
-            xlWorkBook = xlApp.Workbooks.Open(GetExcelFileName(), 0, false, 5, "", "", true, Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
-            xlWorkSheetSales = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(2);
-            xlWorkSheetDepot = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(3);
+            _xlApp = new Excel.Application();
+            _xlWorkBook = _xlApp.Workbooks.Open(GetExcelFileName(), 0, false, 5, "", "", true, Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
+            _xlWorkSheetSales = (Excel.Worksheet)_xlWorkBook.Worksheets.get_Item(2);
+            _xlWorkSheetDepot = (Excel.Worksheet)_xlWorkBook.Worksheets.get_Item(3);
+            _xlWorkSheetPortfolio = (Excel.Worksheet)_xlWorkBook.Worksheets.get_Item(1);
         }
         internal void SaveExcel()
         {
-            if (xlApp != null)
+            if (_xlApp != null)
             {
                 object misValue = System.Reflection.Missing.Value;
 
-                xlWorkBook.Close(true, misValue, misValue);
+                _xlWorkBook.Close(true, misValue, misValue);
             }
         }
 
         internal void CloseExcel()
         {
-            if (xlApp != null)
+            if (_xlApp != null)
             {
-                xlApp.Quit();
+                _xlApp.Quit();
 
-                releaseObject(xlWorkSheetSales);
-                releaseObject(xlWorkSheetDepot);
-                releaseObject(xlWorkBook);
-                releaseObject(xlApp);
-                xlApp = null;
+                releaseObject(_xlWorkSheetSales);
+                releaseObject(_xlWorkSheetDepot);
+                releaseObject(_xlWorkBook);
+                releaseObject(_xlApp);
+                _xlApp = null;
+            }
+        }
+
+        internal void UpdateQuote()
+        {
+            string[] lines = System.IO.File.ReadAllLines("quote.csv");
+            _dctQuote.Clear();
+            foreach (var line in lines)
+            {
+                var columns = line.Split(';');
+                var quote = new QuoteLine()
+                {
+                    Isin = columns[0],
+                    Change = columns[4],
+                    LastUpdate = columns[3],
+                    Place = columns[1],
+                    Quote = double.Parse(columns[2]),
+                    Url = columns[5]
+                };
+                _dctQuote.Add(columns[0], quote);
+            }
+            for (int i = 4; i < 100; i++)
+            {
+                string isin = GetCellString("B", i, _xlWorkSheetPortfolio);
+                if (string.IsNullOrEmpty(isin))
+                    break;
+
+                QuoteLine currentQuote;
+                if(_dctQuote.TryGetValue(isin, out currentQuote))
+                {
+                    _xlWorkSheetPortfolio.Cells[i, "H"] = currentQuote.Quote;
+                    _xlWorkSheetPortfolio.Cells[i, "I"] = currentQuote.LastUpdate;
+                }
+                else
+                {
+                    Console.WriteLine("ISIN {0} from portfolio not found", isin);
+                }
+            }
+
+            for (int i = 4; i < 100; i++)
+            {
+                string isin = GetCellString("A", i, _xlWorkSheetDepot);
+                if (string.IsNullOrEmpty(isin))
+                    break;
+
+                QuoteLine currentQuote;
+                if (_dctQuote.TryGetValue(isin, out currentQuote))
+                {
+                    _xlWorkSheetDepot.Cells[i, "E"] = currentQuote.Quote;
+                    _xlWorkSheetDepot.Cells[i, "O"] = currentQuote.LastUpdate;
+                }
+                else
+                {
+                    Console.WriteLine("ISIN {0} from depot not found", isin);
+                }
             }
         }
 
         internal void FillBuy()
         {
-            List<Sale> sales = ExtractSales(xlWorkSheetSales);
-            List<DepotLine> depotLines = ExtractDepotLines(xlWorkSheetDepot);
+            List<Sale> sales = ExtractSales(_xlWorkSheetSales);
+            List<DepotLine> depotLines = ExtractDepotLines(_xlWorkSheetDepot);
             CalculateBuyValue(sales, depotLines);
-            WriteBuyValue(depotLines, xlWorkSheetDepot);
+            WriteBuyValue(depotLines, _xlWorkSheetDepot);
         }
 
         internal string GetExcelFileName()
@@ -72,7 +137,7 @@ namespace PortfolioExcelChecker
         {
             foreach (var depotLine in depotLines)
             {
-                string isn = depotLine.Isn;
+                string isn = depotLine.Isin;
                 var lastCapital = sales.Where(x => x.Isn.Equals(isn) && x.SaleOperation == SaleOperationEnum.Capital)
                         .OrderBy(x => x.Date).LastOrDefault();
 
@@ -105,7 +170,7 @@ namespace PortfolioExcelChecker
                     buyValue += purchLine.NumPiecesExecuted * purchLine.Price;
                     purchItems += purchLine.NumPiecesExecuted;
                 }
-                depotLine.BuyValue = Math.Round(buyValue,2);
+                depotLine.BuyValue = Math.Round(buyValue, 2);
                 depotLine.BuyValueOnDepotState = Math.Round(buyValue / purchItems * depotLine.NumOfPieces, 2);
 
                 double sellValue = 0.0;
@@ -117,7 +182,7 @@ namespace PortfolioExcelChecker
             }
         }
 
-        private List<DepotLine> ExtractDepotLines(Excel.Worksheet xlWorkSheet)
+        private List<DepotLine> ExtractDepotLines(Excel.Worksheet xDepotlWorkSheet)
         {
             List<DepotLine> depotLines = new List<DepotLine>();
             bool searchData = true;
@@ -125,7 +190,7 @@ namespace PortfolioExcelChecker
             for (int i = 4; i < 300; i++)
             {
                 string nextCellLbl = string.Format("A{0}", i);
-                if (xlWorkSheet.get_Range(nextCellLbl, nextCellLbl).Value2 == null)
+                if (xDepotlWorkSheet.get_Range(nextCellLbl, nextCellLbl).Value2 == null)
                 {
                     if (searchData)
                         continue;
@@ -134,7 +199,7 @@ namespace PortfolioExcelChecker
                 }
                 if (searchData)
                 {
-                    if (xlWorkSheet.get_Range(nextCellLbl, nextCellLbl).Value2 is double)
+                    if (xDepotlWorkSheet.get_Range(nextCellLbl, nextCellLbl).Value2 is double)
                     {
                         searchData = false;
                     }
@@ -142,10 +207,10 @@ namespace PortfolioExcelChecker
                         continue;
                 }
                 currItem = new DepotLine();
-                currItem.Date = DateTime.FromOADate(xlWorkSheet.get_Range(nextCellLbl, nextCellLbl).Value2);
-                currItem.Isn = GetCellString("B", i, xlWorkSheet);
-                currItem.Description = GetCellString("C", i, xlWorkSheet);
-                currItem.NumOfPieces = GetCellDouble("D", i, xlWorkSheet);
+                currItem.Date = DateTime.FromOADate(xDepotlWorkSheet.get_Range(nextCellLbl, nextCellLbl).Value2);
+                currItem.Isin = GetCellString("B", i, xDepotlWorkSheet);
+                currItem.Description = GetCellString("C", i, xDepotlWorkSheet);
+                currItem.NumOfPieces = GetCellDouble("D", i, xDepotlWorkSheet);
                 currItem.Row = i;
                 depotLines.Add(currItem);
             }
