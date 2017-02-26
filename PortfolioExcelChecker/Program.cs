@@ -13,11 +13,19 @@ namespace PortfolioExcelChecker
             PortfolioExcel portFolio = new PortfolioExcel();
             try
             {
-                portFolio.OpenExcel();
-                //portFolio.FillBuy();
-                portFolio.UpdateQuote();
-                //portFolio.SaveExcel();
-                portFolio.Activate();
+                QuoteUpdaterLauncher updater = new QuoteUpdaterLauncher();
+                updater.TeminatedEvent += (x) => 
+                {
+                    portFolio.OpenExcel();
+                    //portFolio.FillBuy();
+                    portFolio.UpdateQuote();
+                    //portFolio.SaveExcel();
+                    portFolio.Activate();
+                };
+
+                //updater.CheckVersion();
+                updater.StartProcess(@"D:\PC_Jim_2016\Projects\ruby\GitHub\ruby_scratch\finanz_net\get_quote.rb");
+                
             }
             catch (Exception ex)
             {
