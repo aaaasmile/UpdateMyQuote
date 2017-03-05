@@ -1,4 +1,5 @@
 *.suo
 *.pdb
 /PortfolioExcelChecker/obj/Debug/*.*
+/PortfolioExcelChecker/bin/Debug/quote.csv
 *.cache
