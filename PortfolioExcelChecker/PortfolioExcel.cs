@@ -15,6 +15,7 @@ namespace PortfolioExcelChecker
         private Excel.Worksheet _xlWorkSheetSales;
         private Excel.Worksheet _xlWorkSheetDepot;
         private Excel.Worksheet _xlWorkSheetPortfolio;
+        private Excel.Worksheet _xlWorkSheetOpportunity;
 
         private string _excelFileName;
 
@@ -31,8 +32,9 @@ namespace PortfolioExcelChecker
             _xlApp = new Excel.Application();
             _xlWorkBook = _xlApp.Workbooks.Open(fileName, 0, false, 5, "", "", true, Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
             _xlWorkSheetSales = (Excel.Worksheet)_xlWorkBook.Worksheets.get_Item(2);
-            _xlWorkSheetDepot = (Excel.Worksheet)_xlWorkBook.Worksheets.get_Item(3);
-            _xlWorkSheetPortfolio = (Excel.Worksheet)_xlWorkBook.Worksheets.get_Item(1);
+            _xlWorkSheetDepot = (Excel.Worksheet)_xlWorkBook.Worksheets.get_Item(1);
+            _xlWorkSheetPortfolio = (Excel.Worksheet)_xlWorkBook.Worksheets.get_Item(3);
+            _xlWorkSheetOpportunity = (Excel.Worksheet)_xlWorkBook.Worksheets.get_Item(4);
         }
 
         internal string GetExcelFileName()
@@ -57,6 +59,8 @@ namespace PortfolioExcelChecker
 
                 releaseObject(_xlWorkSheetSales);
                 releaseObject(_xlWorkSheetDepot);
+                releaseObject(_xlWorkSheetPortfolio);
+                releaseObject(_xlWorkSheetOpportunity);
                 releaseObject(_xlWorkBook);
                 releaseObject(_xlApp);
                 _xlApp = null;
@@ -116,6 +120,25 @@ namespace PortfolioExcelChecker
                 else
                 {
                     Console.WriteLine("ISIN {0} from depot not found", isin);
+                }
+            }
+
+            for (int i = 4; i < 100; i++)
+            {
+                string isin = GetCellString("A", i, _xlWorkSheetOpportunity);
+                if (string.IsNullOrEmpty(isin))
+                    break;
+
+                QuoteLine currentQuote;
+                if (_dctQuote.TryGetValue(isin, out currentQuote))
+                {
+                    _xlWorkSheetOpportunity.Cells[i, "D"] = currentQuote.Quote;
+                    _xlWorkSheetOpportunity.Cells[i, "G"] = currentQuote.LastUpdate;
+                    _xlWorkSheetOpportunity.Cells[i, "H"] = currentQuote.Url;
+                }
+                else
+                {
+                    Console.WriteLine("ISIN {0} from opportunity not found", isin);
                 }
             }
         }
