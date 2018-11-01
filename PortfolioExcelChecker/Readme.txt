@@ -4,6 +4,7 @@ Basta lanciarlo senza nessun parametro
 
 == Info
 Le quotazioni dei fondi ETF li prendo usando ruby. Le url che usa lo script ruby sono fisse dentro allo script.
+Alla fine sono 3 linguaggi necessari: ruby, c# e excel vba.
 
 Il file preposto 
 si trova sotto D:\PC_Jim_2016\Projects\ruby\GitHub\ruby_scratch\finanz_net\get_quote.rb
@@ -22,3 +23,8 @@ Dentro al foglio excel esiste la possibilità di navigare direttamente al sito d
 I path dove si trova rubx.exe, lo script get_quote.rb e il file excel sono fissi nel codice e non sono configurabili.
 L'ordine dei tab in excel così come la posizione della prima riga con i dati sono fisse nel codice. (row 4)
 PortfolioExcelChecker è un programma in c#. 
+
+== File Portfolio.xlsm
+Il file excel Portfolio.xlsm ha una struttura fissa. C'è una macro in vb memorizzata nel pulsante. Col tasto destro
+è possibile copiarlo in un altro tab. I colori che formattano le celle a seconda che la cella sia positiva o negativa,
+si fa con format cell e stile benutzer definitiert. Qui il colore va scritto in tedesco. 
