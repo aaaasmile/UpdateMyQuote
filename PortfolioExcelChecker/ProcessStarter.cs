@@ -12,6 +12,7 @@ namespace PortfolioExcelChecker
 
         internal delegate void OutputWrittenHandler(string res);
         internal event OutputWrittenHandler OutputWrittenEvent = x => { };
+        private int _lineNo;
 
         internal void ExecuteCmd(string rubyExe, string startScript)
         {
@@ -26,6 +27,7 @@ namespace PortfolioExcelChecker
             myProcess.StartInfo.CreateNoWindow = true;
             myProcess.StartInfo.FileName = rubyExe;
             myProcess.StartInfo.Arguments = cmdoptionComplete;
+            _lineNo = 0;
             myProcess.OutputDataReceived += new DataReceivedEventHandler(myProcess_OutputDataReceived);
             myProcess.ErrorDataReceived += new DataReceivedEventHandler(myProcess_ErrorDataReceived);
             myProcess.Start();
@@ -57,7 +59,8 @@ namespace PortfolioExcelChecker
         {
             if (!String.IsNullOrEmpty(e.Data))
             {
-                Console.WriteLine("STDOUT: {0}", e.Data);
+                Console.WriteLine("STDOUT: {0}-{1}", _lineNo, e.Data);
+                _lineNo++;
                 OutputWrittenEvent(e.Data);
             }
         }

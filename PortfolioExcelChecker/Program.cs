@@ -10,13 +10,14 @@ namespace PortfolioExcelChecker
     {
         static void Main(string[] args)
         {
+            String excelFileName = @"D:\Documents\easybank\Portfolio.xlsm";
             PortfolioExcel portFolio = new PortfolioExcel();
             try
             {
                 QuoteUpdaterLauncher updater = new QuoteUpdaterLauncher();
                 updater.TeminatedEvent += (x) => 
                 {
-                    portFolio.OpenExcel(@"D:\Documents\easybank\Portfolio.xlsm");
+                    portFolio.OpenExcel(excelFileName);
                     //portFolio.FillBuy();
                     portFolio.UpdateQuote();
                     //portFolio.SaveExcel();
@@ -24,7 +25,9 @@ namespace PortfolioExcelChecker
                 };
 
                 //updater.CheckVersion();
-                updater.StartProcess(@"D:\PC_Jim_2016\Projects\ruby\GitHub\ruby_scratch\finanz_net\get_quote.rb");
+                String getQuotePath = @"D:\Projects\GItHub\ruby_scratch\finanz_net\get_quote.rb";
+                Console.WriteLine("I am using hard coded paths, for your programming skill this is not an issue. Isn't it?");
+                updater.StartProcess(getQuotePath);
                 
             }
             catch (Exception ex)
